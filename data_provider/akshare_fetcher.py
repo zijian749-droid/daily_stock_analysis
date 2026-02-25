@@ -130,6 +130,21 @@ def _is_hk_code(stock_code: str) -> bool:
     return code.isdigit() and len(code) == 5
 
 
+def is_hk_stock_code(stock_code: str) -> bool:
+    """
+    Public API: determine if a stock code is a Hong Kong stock.
+
+    Delegates to _is_hk_code for internal compatibility.
+
+    Args:
+        stock_code: Stock code (e.g. '00700', 'hk00700')
+
+    Returns:
+        True if HK stock, False otherwise
+    """
+    return _is_hk_code(stock_code)
+
+
 def _is_us_code(stock_code: str) -> bool:
     """
     判断代码是否为美股股票（不包括美股指数）。
@@ -1305,10 +1320,12 @@ class AkshareFetcher(BaseFetcher):
         
         return result
 
-    def get_main_indices(self) -> Optional[List[Dict[str, Any]]]:
+    def get_main_indices(self, region: str = "cn") -> Optional[List[Dict[str, Any]]]:
         """
-        获取主要指数实时行情 (新浪接口)
+        获取主要指数实时行情 (新浪接口)，仅支持 A 股
         """
+        if region != "cn":
+            return None
         import akshare as ak
 
         # 主要指数代码映射

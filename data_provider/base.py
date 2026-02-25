@@ -74,6 +74,23 @@ def normalize_stock_code(stock_code: str) -> str:
     return code
 
 
+def canonical_stock_code(code: str) -> str:
+    """
+    Return the canonical (uppercase) form of a stock code.
+
+    This is a display/storage layer concern, distinct from normalize_stock_code
+    which strips exchange prefixes. Apply at system input boundaries to ensure
+    consistent case across BOT, WEB UI, API, and CLI paths (Issue #355).
+
+    Examples:
+        'aapl'    -> 'AAPL'
+        'AAPL'    -> 'AAPL'
+        '600519'  -> '600519'  (digits are unchanged)
+        'hk00700' -> 'HK00700'
+    """
+    return (code or "").strip().upper()
+
+
 class DataFetchError(Exception):
     """数据获取异常基类"""
     pass
@@ -131,9 +148,12 @@ class BaseFetcher(ABC):
         """
         pass
 
-    def get_main_indices(self) -> Optional[List[Dict[str, Any]]]:
+    def get_main_indices(self, region: str = "cn") -> Optional[List[Dict[str, Any]]]:
         """
         获取主要指数实时行情
+
+        Args:
+            region: 市场区域，cn=A股 us=美股
 
         Returns:
             List[Dict]: 指数列表，每个元素为字典，包含:
@@ -923,11 +943,11 @@ class DataFetcherManager:
         logger.info(f"[股票名称] 批量获取完成，成功 {len(result)}/{len(stock_codes)}")
         return result
 
-    def get_main_indices(self) -> List[Dict[str, Any]]:
+    def get_main_indices(self, region: str = "cn") -> List[Dict[str, Any]]:
         """获取主要指数实时行情（自动切换数据源）"""
         for fetcher in self._fetchers:
             try:
-                data = fetcher.get_main_indices()
+                data = fetcher.get_main_indices(region=region)
                 if data:
                     logger.info(f"[{fetcher.name}] 获取指数行情成功")
                     return data
